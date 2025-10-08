@@ -1,4 +1,4 @@
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ExifTags
 import os
 import math
 
@@ -18,7 +18,26 @@ def draw_text_right(draw, y_pos, text, font, image_width, margin_right=50, text_
     return y_pos + text_height + 5  # kembalikan y_pos berikutnya
 
 def add_timestamp_location(image_path, output_path, location_info, map_path="map.jpg"):
+    # Buka gambar
     img = Image.open(image_path)
+
+    # === Periksa orientasi EXIF dan putar otomatis ===
+    try:
+        for orientation in ExifTags.TAGS.keys():
+            if ExifTags.TAGS[orientation]=='Orientation':
+                break
+        exif = img._getexif()
+        if exif is not None:
+            orientation_value = exif.get(orientation, 1)
+            if orientation_value == 3:
+                img = img.rotate(180, expand=True)
+            elif orientation_value == 6:
+                img = img.rotate(270, expand=True)
+            elif orientation_value == 8:
+                img = img.rotate(90, expand=True)
+    except:
+        pass
+
     width, height = img.size
     draw = ImageDraw.Draw(img)
     
@@ -102,6 +121,7 @@ def add_timestamp_location(image_path, output_path, location_info, map_path="map
             text = f"{location_info[key]}" if key != 'index' else f"Index number: {location_info[key]}"
             y_pos = draw_text_right(draw, y_pos, text, font_secondary, width)
     
+    # Simpan gambar
     img.save(output_path, quality=95)
     print(f"Gambar berhasil disimpan di {output_path}")
 
@@ -120,7 +140,7 @@ if __name__ == "__main__":
         'index': '8',
         'latitude': -6.889678868870827,
         'longitude': 108.30611937791178,
-        'compass_angle': 189  # <-- ganti ini untuk arah jarum
+        'compass_angle': 279  # <-- ganti ini untuk arah jarum
     }
     
     input_image = "1.jpeg"  # ganti dengan foto Anda
